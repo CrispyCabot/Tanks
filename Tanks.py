@@ -191,10 +191,10 @@ class playerUpdates:
     #Return 'right' or 'left' , 'forward' or 'backward' , True or False
     #You CAN return nothing for the first two, but must return True or False for the last part
     def Chris(loc, dir, move, info):
-        lr = ['left', 'right']
-        fb = ['forward', 'backward']
+        lr = ['left', 'right', '', '']
+        fb = ['forward', 'backward', '']
         if randint(0,20) == 1:
-            return lr[randint(0,1)], fb[randint(0,1)], True
+            return lr[randint(0,3)], fb[randint(0,2)], True
         else:
             return dir, move, True
 
