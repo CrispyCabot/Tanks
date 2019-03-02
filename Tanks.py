@@ -19,7 +19,7 @@ PATH = PATH[0:-8] #-16 to chop off SnakeVsRoyale.py
 font = pygame.font.SysFont('', 24)
 bigFont = pygame.font.SysFont('', 30)
 
-tankImg = pygame.image.load(PATH+'tank2.png')
+tankImg = pygame.image.load(PATH+'tank.png')
 shotImg = pygame.image.load(PATH+'shot.png')
 w, h = tankImg.get_rect().size
 tankImg = pygame.transform.scale(tankImg, (int(w*size), int(h*size)))
@@ -29,13 +29,15 @@ shotImg = pygame.transform.scale(shotImg, (int(w*size*.4,), int(h*size*.4)))
 
 clock = pygame.time.Clock()
 
-shotDelay = 50
 turnSpeed = 5
 moveSpeed = 5
 shotSpeed = 10
 
 class Tank:
     def __init__(self, x, y, angle, name):
+        self.image = pygame.image.load(PATH+os.path.join('tankColors', 'tank'+str(randint(1,35))+'.png'))
+        w, h = self.image.get_rect().size
+        self.image = pygame.transform.scale(self.image, (int(w*size), int(h*size)))
         self.x = x
         self.y = y
         self.angle = angle
@@ -45,6 +47,7 @@ class Tank:
         self.kills = 0
         self.shots = []
         self.shotTimer = 0
+        self.bullets = 5
         self.alive = True
         self.name = name
         self.shoot = False
@@ -53,8 +56,8 @@ class Tank:
     def setDir(self, info):
         self.dir, self.move, self.shoot = getattr(playerUpdates, self.name)([self.x, self.y], self.dir, self.move, info.copy())
     def update(self, win):
-        if self.shoot and self.shotTimer > shotDelay:
-            self.shotTimer = 0
+        if self.shoot and self.bullets > 0:
+            self.bullets -= 1
             self.shots.append(Shot(self.x, self.y, self.angle))
         for i in self.shots:
             if i.update(win):
@@ -69,22 +72,22 @@ class Tank:
             if self.angle < 0:
                 self.angle += 360
         if self.move == 'forward':
-            if 0+tankWidth/2 < self.x + cos(radians(self.angle))*moveSpeed < width-tankWidth/2: #May need to use height instead of width - use the smallest one
+            if 0+tankHeight/2 < self.x + cos(radians(self.angle))*moveSpeed < width-tankHeight/2: #May need to use height instead of width - use the smallest one
                 self.x += cos(radians(self.angle))*moveSpeed
-            if 0+tankWidth/2 < self.y - sin(radians(self.angle))*moveSpeed < height-tankWidth/2:
+            if 0+tankHeight/2 < self.y - sin(radians(self.angle))*moveSpeed < height-tankHeight/2:
                 self.y -= sin(radians(self.angle))*moveSpeed
         elif self.move == 'backward':
-            if 0+tankWidth < self.x - cos(radians(self.angle))*moveSpeed < width-tankWidth:
+            if 0+tankHeight < self.x - cos(radians(self.angle))*moveSpeed < width-tankHeight:
                 self.x -= cos(radians(self.angle))*moveSpeed
-            if 0+tankWidth < self.y + sin(radians(self.angle))*moveSpeed < height-tankWidth:
+            if 0+tankHeight < self.y + sin(radians(self.angle))*moveSpeed < height-tankHeight:
                 self.y += sin(radians(self.angle))*moveSpeed
-        img = pygame.transform.rotate(tankImg, self.angle)
+        img = pygame.transform.rotate(self.image, self.angle)
         pos = img.get_rect()
         pos.center = (self.x, self.y)
         win.blit(img, pos)
         text = font.render(self.name, True, (0,0,0))
         pos = text.get_rect()
-        pos.center = (self.x, self.y-tankWidth)
+        pos.center = (self.x, self.y-tankHeight)
         w, h = pos.size
         pygame.draw.rect(win, (255,255,255), pygame.Rect(pos.x, pos.y, w, h))
         win.blit(text, pos)
@@ -106,8 +109,7 @@ class Shot:
 
 
 def main():
-    global shotDelay
-    players = ['Chris']
+    players = ['Keys']
     shuffle(players)
     counter = len(players)
     for i in range(0,counter):
@@ -136,10 +138,10 @@ def main():
             if keys[pygame.K_ESCAPE]:
                 playing = False
 
-        if time.time() - tStart > 5:
+        if time.time() - tStart > 3:
             tStart = time.time()
-            if not(shotDelay == 5):
-                shotDelay -= 5
+            for i in tankList:
+                i.bullets += 1
 
         info = []
         for i in tankList:
@@ -154,7 +156,7 @@ def main():
                 for y in x[2]: #Shot list
                     shot = [y.x, y.y]
                     collision = False
-                    if abs(shot[0]-tank[0]) < tankWidth/2 and abs(shot[1]-tank[1]) < tankWidth/2:
+                    if abs(shot[0]-tank[0]) < tankHeight/2 and abs(shot[1]-tank[1]) < tankHeight/2:
                         collision = True
                     if collision and not(x[0] == [i.x, i.y]): #makes sure it isn't own shot
                         feed.append([i.name + ' is out', 0])
@@ -197,5 +199,17 @@ class playerUpdates:
             return lr[randint(0,3)], fb[randint(0,2)], True
         else:
             return dir, move, True
+    def Keys(loc, dir, move, info):
+        global keys
+        dir1, dir2 = '', ''
+        if keys[pygame.K_UP]:
+            dir1 = 'forward'
+        if keys[pygame.K_DOWN]:
+            dir1 = 'backward'
+        if keys[pygame.K_LEFT]:
+            dir2 = 'left'
+        if keys[pygame.K_RIGHT]:
+            dir2 = 'right'
+        return dir2, dir1, True
 
 main()
