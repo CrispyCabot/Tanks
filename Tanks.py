@@ -46,7 +46,7 @@ class Tank:
         self.move = '' #forward, backward, none
         self.kills = 0
         self.shots = []
-        self.bullets = 5
+        self.bullets = 10
         self.alive = True
         self.name = name
         self.shoot = False
@@ -120,7 +120,7 @@ def main():
     shuffle(players)
     counter = len(players)
     for i in range(0,counter):
-        for x in range(1,1): #Number of repeated tanks
+        for x in range(1,3): #Number of repeated tanks
             players.append(players[i])
             pass
     tankList = []
@@ -228,7 +228,7 @@ def main():
             loc.top = counter
             win.blit(text, loc)
             counter += 30
-    #    pygame.display.update()
+        pygame.display.update()
 
 class playerUpdates:
     #Return 'right' or 'left' , 'forward' or 'backward' , True or False
@@ -250,13 +250,14 @@ class playerUpdates:
                             newY = x.y-sin(radians(x.angle))*val
                             if loc[0]-tankHeight/2 < newX < loc[0]+tankHeight/2 and loc[1]-tankHeight/2 < newY < loc[1]+tankHeight/2:
                                 return False
-                        pygame.draw.line(win, (255,255,255), (x.x, x.y), (x.x+cos(radians(x.angle))*val, x.y-sin(radians(x.angle))*val))
-            pygame.display.update()
+                        #pygame.draw.line(win, (255,255,255), (x.x, x.y), (x.x+cos(radians(x.angle))*val, x.y-sin(radians(x.angle))*val))
+            return True
         if safe():
             print('-')
+            return '', '', True
         else:
             print('will hit')
-        return 'left', 'forward', True
+            return 'left', 'forward', True
     def Keys(loc, dir, move, bullets, info):
         global keys
         dir1, dir2 = '', ''
