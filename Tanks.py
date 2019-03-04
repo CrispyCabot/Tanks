@@ -46,7 +46,7 @@ class Tank:
         self.move = '' #forward, backward, none
         self.kills = 0
         self.shots = []
-        self.bullets = 10
+        self.bullets = 20
         self.alive = True
         self.name = name
         self.shoot = False
@@ -199,7 +199,7 @@ def main():
             if i[1] > 200:
                 feed.remove(i)
         #Side bar
-        pygame.draw.rect(win, (255,255,255), pygame.Rect(width,0,width+200,height))
+        pygame.draw.rect(win, (200,200,200), pygame.Rect(width,0,width+200,height))
         counter = 50
         name = font.render('Name', True, (255,0,0))
         loc = name.get_rect()
@@ -245,7 +245,7 @@ class playerUpdates:
             for i in info:
                 if not(i[0] == loc):
                     for x in i[2]:
-                        for val in range(10,1000):
+                        for val in range(10,1000, 20):
                             newX = x.x+cos(radians(x.angle))*val
                             newY = x.y-sin(radians(x.angle))*val
                             if loc[0]-tankHeight/2 < newX < loc[0]+tankHeight/2 and loc[1]-tankHeight/2 < newY < loc[1]+tankHeight/2:
