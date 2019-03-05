@@ -1,7 +1,7 @@
-#SnakeVsRoyale.py
+#Tanks.py
 import pygame
 import os
-from math import cos, sin, radians, pi
+from math import *
 from random import randint, shuffle
 from pygame.locals import *
 import time
@@ -10,7 +10,7 @@ pygame.init()
 
 width = 800
 height = 500
-size = .1
+size = .07
 win = pygame.display.set_mode((width+200,height)) #additional 200 to width for scoreboard
 pygame.display.set_caption("Tanks")
 
@@ -34,6 +34,7 @@ moveSpeed = 5
 shotSpeed = 10
 
 class Tank:
+    shotDelay = 5
     def __init__(self, x, y, angle, name):
         self.image = pygame.image.load(PATH+os.path.join('tankColors', 'tank'+str(randint(1,35))+'.png'))
         w, h = self.image.get_rect().size
@@ -46,6 +47,7 @@ class Tank:
         self.move = '' #forward, backward, none
         self.kills = 0
         self.shots = []
+        self.delay = 0
         self.bullets = 20
         self.alive = True
         self.name = name
@@ -53,11 +55,13 @@ class Tank:
     def getInfo(self):
         return [[self.x, self.y], self.angle, self.shots, self.bullets, self.kills]
     def setDir(self, info):
-        self.dir, self.move, self.shoot = getattr(playerUpdates, self.name)([self.x, self.y], self.dir, self.move, self.bullets, info.copy())
+        self.dir, self.move, self.shoot = getattr(playerUpdates, self.name)([self.x, self.y], self.dir, self.move, self.angle, self.bullets, info.copy())
     def update(self, win):
+        self.delay += 1
         if self.alive:
-            if self.shoot and self.bullets > 0:
+            if self.shoot and self.bullets > 0 and self.delay > Tank.shotDelay:
                 self.bullets -= 1
+                self.delay = 0
                 self.shots.append(Shot(self.x, self.y, self.angle))
             for i in self.shots:
                 if i.update(win):
@@ -76,9 +80,9 @@ class Tank:
                 if 0+tankHeight/2 < self.y - sin(radians(self.angle))*moveSpeed < height-tankHeight/2:
                     self.y -= sin(radians(self.angle))*moveSpeed
             elif self.move == 'backward':
-                if 0 < self.x - cos(radians(self.angle))*moveSpeed < width:
+                if 0+tankHeight/2 < self.x - cos(radians(self.angle))*moveSpeed < width-tankHeight/2:
                     self.x -= cos(radians(self.angle))*moveSpeed
-                if 0 < self.y + sin(radians(self.angle))*moveSpeed < height:
+                if 0+tankHeight/2 < self.y + sin(radians(self.angle))*moveSpeed < height-tankHeight/2:
                     self.y += sin(radians(self.angle))*moveSpeed
             img = pygame.transform.rotate(self.image, self.angle)
             pos = img.get_rect()
@@ -116,11 +120,11 @@ class Shot:
 
 
 def main():
-    players = ['Keys', 'Chris']
+    players = ['Keys', 'Chris', 'Rando']
     shuffle(players)
     counter = len(players)
     for i in range(0,counter):
-        for x in range(1,3): #Number of repeated tanks
+        for x in range(1,5): #Number of repeated tanks
             players.append(players[i])
             pass
     tankList = []
@@ -233,32 +237,50 @@ def main():
 class playerUpdates:
     #Return 'right' or 'left' , 'forward' or 'backward' , True or False
     #You CAN return nothing for the first two, but must return True or False for the last part
-    def Rando(loc, dir, move, bullets, info):
+    def Rando(loc, dir, move, angle, bullets, info):
         lr = ['left', 'right', '', ''] #2 blanks for chance to not change direction
         fb = ['forward', 'backward', '']
         if randint(0,20) == 1:
             return lr[randint(0,3)], fb[randint(0,2)], True
         else:
             return dir, move, True
-    def Chris(loc, dir, move, bullets, info):
-        def safe():
+    def Chris(loc, dir, move, angle, bullets, info):
+        def safe(pos):
+            if not(0+tankHeight/2 < pos[0] < width-tankHeight/2):
+                return False
+            if not(0+tankHeight/2 < pos[1] < height-tankHeight/2):
+                return False
             for i in info:
-                if not(i[0] == loc):
+                if not(i[0] == pos):
                     for x in i[2]:
                         for val in range(10,1000, 20):
                             newX = x.x+cos(radians(x.angle))*val
                             newY = x.y-sin(radians(x.angle))*val
-                            if loc[0]-tankHeight/2 < newX < loc[0]+tankHeight/2 and loc[1]-tankHeight/2 < newY < loc[1]+tankHeight/2:
+                            if pos[0]-tankHeight/2 < newX < pos[0]+tankHeight/2 and loc[1]-tankHeight/2 < newY < loc[1]+tankHeight/2:
                                 return False
                         #pygame.draw.line(win, (255,255,255), (x.x, x.y), (x.x+cos(radians(x.angle))*val, x.y-sin(radians(x.angle))*val))
             return True
-        if safe():
-            print('-')
-            return '', '', True
+        if safe(loc):
+            return '', '', False
         else:
-            print('will hit')
-            return 'left', 'forward', True
-    def Keys(loc, dir, move, bullets, info):
+            dir1 = dir
+            newAngle = angle
+            startAngle = 0
+            for i in range(startAngle,startAngle+360,10):
+                #pygame.draw.circle(win, (255,255,255), (int(loc[0]+cos(radians(i))*40), int(loc[1]+sin(radians(i))*40)), 2, 2)
+                if safe([loc[0]+cos(radians(i))*40, loc[1]+sin(radians(i))*40]):
+                    newAngle = i
+                    break
+            if angle < newAngle:
+                dir1 = 'left'
+            elif angle > newAngle:
+                dir1 = 'right'
+            print(1)
+            print(dir1, 'forward')
+            return dir1, 'forward', False
+        print(2)
+        return 'left', 'forward', False
+    def Keys(loc, dir, move, angle, bullets, info):
         global keys
         dir1, dir2 = '', ''
         if keys[pygame.K_UP]:
