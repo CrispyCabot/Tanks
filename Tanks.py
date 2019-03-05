@@ -131,6 +131,7 @@ def main():
     info = []
     tickRate = 30
     feed = []
+    deadTanks = []
 
     for i in players:
         tank = Tank(randint(50,width-50), randint(50,height-50), randint(0,360), i)
@@ -189,6 +190,7 @@ def main():
             if i.update(win):
                 removes.append(i) #It was stuttering when I removed here but this works so yeah
         for i in removes:
+            deadTanks.append(i)
             tankList.remove(i)
         ycounter = 20
         for i in feed:
@@ -217,6 +219,8 @@ def main():
         win.blit(kills, loc)
         topKillList = []
         for i in tankList:
+            topKillList.append([i.name, i.kills])
+        for i in deadTanks:
             topKillList.append([i.name, i.kills])
         topKillList.sort(key = lambda x: x[1])
         topKillList.reverse()
