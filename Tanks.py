@@ -48,7 +48,7 @@ class Tank:
         self.kills = 0
         self.shots = []
         self.delay = 0
-        self.bullets = 20
+        self.bullets = 5
         self.alive = True
         self.name = name
         self.shoot = False
@@ -74,6 +74,10 @@ class Tank:
                 self.angle -= turnSpeed
                 if self.angle < 0:
                     self.angle += 360
+            if self.dir == 'sright':
+                self.angle -= 1
+            if self.dir == 'sleft':
+                self.angle += 1
             if self.move == 'forward':
                 if 0+tankHeight/2 < self.x + cos(radians(self.angle))*moveSpeed < width-tankHeight/2: #May need to use height instead of width - use the smallest one
                     self.x += cos(radians(self.angle))*moveSpeed
@@ -95,8 +99,8 @@ class Tank:
             pygame.draw.rect(win, (255,255,255), pygame.Rect(pos.x, pos.y, w, h))
             win.blit(text, pos)
         else:
-            self.x = -100
-            self.y = -100
+            self.x = -1000
+            self.y = -1000
             for i in self.shots:
                 if i.update(win):
                     self.shots.remove(i)
@@ -120,6 +124,9 @@ class Shot:
 
 
 def main():
+    def dist(p1, p2):
+        return sqrt((p2[0]-p1[0])**2+(p2[1]-p1[1])**2)
+    global end
     players = ['Keys', 'Chris', 'Rando']
     shuffle(players)
     counter = len(players)
@@ -132,6 +139,8 @@ def main():
     tickRate = 30
     feed = []
     deadTanks = []
+    giveBulletDelay = 3
+    initTime = time.time()
 
     for i in players:
         tank = Tank(randint(50,width-50), randint(50,height-50), randint(0,360), i)
@@ -144,16 +153,31 @@ def main():
         for event in pygame.event.get():
             if event.type == QUIT:
                 playing = False
+                end = False
         global keys
         keys = pygame.key.get_pressed()
-        for i in keys:
-            if keys[pygame.K_ESCAPE]:
-                playing = False
+        if keys[pygame.K_ESCAPE]:
+            playing = False
+            end = False
+        if keys[pygame.K_r]:
+            playing = False
 
-        if time.time() - tStart > 3:
+        if time.time() - tStart > giveBulletDelay:
             tStart = time.time()
             for i in tankList:
                 i.bullets += 1
+        if time.time()-initTime > 10:
+            giveBulletDelay = 2.5
+        if time.time()-initTime > 20:
+            giveBulletDelay = 2
+        if time.time()-initTime > 30:
+            giveBulletDelay = 1.5
+        if time.time()-initTime > 40:
+            giveBulletDelay = 1
+        if time.time()-initTime > 50:
+            giveBulletDelay = .5
+        if time.time()-initTime > 60:
+            giveBulletDelay = 0
 
         info = []
         for i in tankList:
@@ -168,7 +192,7 @@ def main():
                 for y in x.shots: #Shot list
                     shot = [y.x, y.y]
                     collision = False
-                    if abs(shot[0]-tank[0]) < tankHeight/2 and abs(shot[1]-tank[1]) < tankHeight/2:
+                    if dist(shot, tank) < tankHeight/2:
                         collision = True
                     if collision and not([x.x, x.y] == [i.x, i.y]): #makes sure it isn't own shot
                         feed.append([i.name + ' is out', 0])
@@ -219,13 +243,16 @@ def main():
         win.blit(kills, loc)
         topKillList = []
         for i in tankList:
-            topKillList.append([i.name, i.kills])
+            topKillList.append([i.name, i.kills, False])
         for i in deadTanks:
-            topKillList.append([i.name, i.kills])
+            topKillList.append([i.name, i.kills, True]) #True for dead, False for not dead
         topKillList.sort(key = lambda x: x[1])
         topKillList.reverse()
         for i in topKillList:
-            text = font.render(i[0], True, (0,0,0))
+            if i[2]:
+                text = font.render(i[0], True, (255,100,100))
+            else:
+                text = font.render(i[0], True, (0,0,0))
             loc = text.get_rect()
             loc.right = width+75
             loc.top = counter
@@ -235,11 +262,11 @@ def main():
             loc.left = width+115
             loc.top = counter
             win.blit(text, loc)
-            counter += 30
+            counter += 25
         pygame.display.update()
 
 class playerUpdates:
-    #Return 'right' or 'left' , 'forward' or 'backward' , True or False
+    #Return 'right', 'left', 'sright', or 'sleft' | 'forward' or 'backward' | True or False
     #You CAN return nothing for the first two, but must return True or False for the last part
     def Rando(loc, dir, move, angle, bullets, info):
         lr = ['left', 'right', '', ''] #2 blanks for chance to not change direction
@@ -249,11 +276,14 @@ class playerUpdates:
         else:
             return dir, move, True
     def Chris(loc, dir, move, angle, bullets, info):
+        selfShots = []
+        def dist(p1, p2):
+            return sqrt((p2[0]-p1[0])**2+(p2[1]-p1[1])**2)
         def safe(pos):
             if not(0+tankHeight/2 < pos[0] < width-tankHeight/2):
-                return False
+                return False, ''
             if not(0+tankHeight/2 < pos[1] < height-tankHeight/2):
-                return False
+                return False, ''
             for i in info:
                 if not(i[0] == pos):
                     for x in i[2]:
@@ -261,28 +291,67 @@ class playerUpdates:
                             newX = x.x+cos(radians(x.angle))*val
                             newY = x.y-sin(radians(x.angle))*val
                             if pos[0]-tankHeight/2 < newX < pos[0]+tankHeight/2 and loc[1]-tankHeight/2 < newY < loc[1]+tankHeight/2:
-                                return False
+                                return False, x
                         #pygame.draw.line(win, (255,255,255), (x.x, x.y), (x.x+cos(radians(x.angle))*val, x.y-sin(radians(x.angle))*val))
-            return True
-        if safe(loc):
-            return '', '', False
+                else:
+                    selfShots = i[2]
+            return True, ''
+        temp, shot = safe(loc)
+        if temp: #if safe
+            #find closest tank
+            closest = [-1000,-1000]
+            for i in info:
+                if not(i[0] == loc):
+                    if dist(loc, i[0]) < dist(loc, closest):
+                        closest = i[0]
+            #turn to closest tank
+            ang = atan2(closest[1]-loc[1], closest[0]-loc[0])
+            ang = ang*180/pi
+            if angle > 180:
+                compareAngle = 360-angle
+            else:
+                compareAngle = -angle
+            shoot = False
+            if abs(compareAngle - ang) < 2:
+                shoot = True
+            if compareAngle < ang:
+                dir1 = 'right'
+            if compareAngle > ang:
+                dir1 = 'left'
+            if abs(compareAngle-ang) < 10:
+                if compareAngle < ang:
+                    dir1 = 'sright'
+                if compareAngle > ang:
+                    dir1 = 'sleft'
+            #print(ang, compareAngle)
+            return dir1, '', shoot
         else:
             dir1 = dir
+            dir2 = move
             newAngle = angle
             startAngle = 0
             for i in range(startAngle,startAngle+360,10):
                 #pygame.draw.circle(win, (255,255,255), (int(loc[0]+cos(radians(i))*40), int(loc[1]+sin(radians(i))*40)), 2, 2)
-                if safe([loc[0]+cos(radians(i))*40, loc[1]+sin(radians(i))*40]):
+                temp, empty = safe([loc[0]+cos(radians(i))*20, loc[1]+sin(radians(i))*20])
+                if temp:
                     newAngle = i
                     break
             if angle < newAngle:
                 dir1 = 'left'
             elif angle > newAngle:
                 dir1 = 'right'
-            print(1)
-            print(dir1, 'forward')
-            return dir1, 'forward', False
-        print(2)
+            try: #There is an error when the other tank dies i think so this just ignores that
+                if abs(shot.angle - angle) < 180:
+                    dir2 = 'forward'
+                else:
+                    dir2 = 'backward'
+                    if dir1 == 'left':
+                        dir1 = 'right'
+                    else:
+                        dir1 == 'right'
+            except:
+                pass
+            return dir1, dir2, False
         return 'left', 'forward', False
     def Keys(loc, dir, move, angle, bullets, info):
         global keys
@@ -300,4 +369,6 @@ class playerUpdates:
         else:
             return dir2, dir1, False
 
-main()
+end = True
+while end:
+    main()
