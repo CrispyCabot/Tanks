@@ -14,10 +14,11 @@ size = .07
 win = pygame.display.set_mode((width+200,height)) #additional 200 to width for scoreboard
 pygame.display.set_caption("Tanks")
 
-PATH = os.path.abspath(__file__)
-PATH = PATH[0:-8] #-16 to chop off SnakeVsRoyale.py
-font = pygame.font.SysFont('', 24)
-bigFont = pygame.font.SysFont('', 30)
+PATH = os.path.abspath(__file__) #This gets the whole path so like: /Users/user/folder/Tanks/Tanks.py
+PATH = PATH[0:-8] #-8 to chop off Tanks.py
+#Using this PATH variables makes loading things less error prone
+font = pygame.font.SysFont('', 24) #Loads default font at size 24
+bigFont = pygame.font.SysFont('', 30) #Same but size 30
 
 tankImg = pygame.image.load(PATH+'tank.png')
 shotImg = pygame.image.load(PATH+'shot.png')
@@ -42,13 +43,12 @@ class Tank:
         self.x = x
         self.y = y
         self.angle = angle
-        dirs = ['right', 'left']
         self.dir = ''
         self.move = '' #forward, backward, none
         self.kills = 0
         self.shots = []
         self.delay = 0
-        self.bullets = 5
+        self.bullets = 0
         self.alive = True
         self.name = name
         self.shoot = False
@@ -125,13 +125,13 @@ class Shot:
 
 def main():
     def dist(p1, p2):
-        return sqrt((p2[0]-p1[0])**2+(p2[1]-p1[1])**2)
+        return sqrt((p2[0]-p1[0])**2+(p2[1]-p1[1])**2) #distance formula
     global end
-    players = ['Keys', 'Chris', 'Rando']
+    players = ['Rando', 'Chris', 'Rando', 'Keys']
     shuffle(players)
     counter = len(players)
     for i in range(0,counter):
-        for x in range(1,5): #Number of repeated tanks
+        for x in range(1,1): #Number of repeated tanks
             players.append(players[i])
             pass
     tankList = []
@@ -277,12 +277,17 @@ class playerUpdates:
             return dir, move, True
     def Chris(loc, dir, move, angle, bullets, info):
         selfShots = []
+        for i in info:
+            if not(i[0] == loc):
+                pass
+            else:
+                selfShots = i[2]
         def dist(p1, p2):
             return sqrt((p2[0]-p1[0])**2+(p2[1]-p1[1])**2)
         def safe(pos):
-            if not(0+tankHeight/2 < pos[0] < width-tankHeight/2):
+            if not(0+tankHeight < pos[0] < width-tankHeight):
                 return False, ''
-            if not(0+tankHeight/2 < pos[1] < height-tankHeight/2):
+            if not(0+tankHeight < pos[1] < height-tankHeight):
                 return False, ''
             for i in info:
                 if not(i[0] == pos):
@@ -293,8 +298,6 @@ class playerUpdates:
                             if pos[0]-tankHeight/2 < newX < pos[0]+tankHeight/2 and loc[1]-tankHeight/2 < newY < loc[1]+tankHeight/2:
                                 return False, x
                         #pygame.draw.line(win, (255,255,255), (x.x, x.y), (x.x+cos(radians(x.angle))*val, x.y-sin(radians(x.angle))*val))
-                else:
-                    selfShots = i[2]
             return True, ''
         temp, shot = safe(loc)
         if temp: #if safe
@@ -312,19 +315,27 @@ class playerUpdates:
             else:
                 compareAngle = -angle
             shoot = False
-            if abs(compareAngle - ang) < 2:
+            dir2 = ''
+            if abs(compareAngle - ang) < 2 and (bullets >= 3 or len(selfShots) >= 1):
                 shoot = True
+            elif abs(compareAngle-ang) < 2 and dist(loc,closest) < 50:
+                shoot = True
+            if abs(compareAngle - ang) < 20 and (bullets >= 3 or len(selfShots) >= 1):
+                if dist(loc, closest) > 50:
+                    dir2 = 'forward'
+            dir1 = ''
             if compareAngle < ang:
                 dir1 = 'right'
             if compareAngle > ang:
                 dir1 = 'left'
+            print(compareAngle, ang)
             if abs(compareAngle-ang) < 10:
                 if compareAngle < ang:
                     dir1 = 'sright'
                 if compareAngle > ang:
                     dir1 = 'sleft'
             #print(ang, compareAngle)
-            return dir1, '', shoot
+            return dir1, dir2, shoot
         else:
             dir1 = dir
             dir2 = move
