@@ -5,7 +5,7 @@ from math import *
 from random import randint, shuffle
 from pygame.locals import *
 import time
-#test
+
 pygame.init()
 
 width = 800
@@ -131,7 +131,7 @@ def main():
     shuffle(players)
     counter = len(players)
     for i in range(0,counter):
-        for x in range(1,1): #Number of repeated tanks
+        for x in range(1,5): #Number of repeated tanks
             players.append(players[i])
             pass
     tankList = []
@@ -328,13 +328,11 @@ class playerUpdates:
                 dir1 = 'right'
             if compareAngle > ang:
                 dir1 = 'left'
-            print(compareAngle, ang)
             if abs(compareAngle-ang) < 10:
                 if compareAngle < ang:
                     dir1 = 'sright'
                 if compareAngle > ang:
                     dir1 = 'sleft'
-            #print(ang, compareAngle)
             return dir1, dir2, shoot
         else:
             dir1 = dir
